@@ -3,16 +3,13 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 session_start();
 
-// Debug: Check if session variables exist
-if (!isset($_SESSION['email']) || !isset($_SESSION['name'])) {
-    echo "Debug Info:<br>";
-    echo "Session ID: " . session_id() . "<br>";
-    echo "Session Data: " . print_r($_SESSION, true) . "<br>";
-    echo "GET Data: " . print_r($_GET, true) . "<br>";
-    echo "Redirecting to login...<br>";
-    header("Location: index.php");
+if (!isset($_SESSION['email'])) {
+    header('Location: index.php');
     exit();
 }
+
+$loginMethod = $_SESSION['login_method'] ?? 'Google OAuth 2.0';
+$displayName = $_SESSION['name'] ?? 'User';
 ?>
 
 <!DOCTYPE html>
@@ -251,13 +248,81 @@ if (!isset($_SESSION['email']) || !isset($_SESSION['name'])) {
         <div class="navbar-right">
             <span style="color: #666; font-size: 14px;">
                 <i class="fas fa-user-circle"></i> 
-                <?php echo htmlspecialchars($_SESSION['name']); ?>
+                <?php echo htmlspecialchars($displayName); ?>
             </span>
             <a href="logout.php" class="logout-btn">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </a>
         </div>
     </nav>
+
+    <div class="container">
+        <div class="dashboard-grid">
+            <div class="card welcome-card">
+                <h1>Welcome, <?php echo htmlspecialchars(explode(' ', $displayName)[0]); ?>!</h1>
+                <p>You are successfully logged in to your account.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-user"></i> Account Information
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Full Name</div>
+                    <div class="info-value"><?php echo htmlspecialchars($displayName); ?></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Email Address</div>
+                    <div class="info-value"><?php echo htmlspecialchars($_SESSION['email']); ?></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Account Status</div>
+                    <div class="status-badge"><i class="fas fa-check-circle"></i> Active</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-lock"></i> Security
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Login Method</div>
+                    <div class="info-value"><?php echo htmlspecialchars($loginMethod === 'local' ? 'Email and password' : 'Google OAuth 2.0'); ?></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Session Status</div>
+                    <div class="status-badge"><i class="fas fa-check-circle"></i> Secure</div>
+                </div>
+                <button class="action-button">
+                    <i class="fas fa-lock"></i> Update Security Settings
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-cog"></i> Quick Actions
+                </div>
+                <div class="info-item">
+                    <p style="color: #666; font-size: 14px; line-height: 1.6;">
+                        Manage your account settings, security preferences, and privacy options from here.
+                    </p>
+                </div>
+                <button class="action-button">
+                    <i class="fas fa-user-cog"></i> Account Settings
+                </button>
+                <button class="action-button">
+                    <i class="fas fa-key"></i> Connected Apps
+                </button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><i class="fas fa-shield-alt"></i> Your data is secure and protected with industry-standard encryption</p>
+        </div>
+    </div>
+</body>
+</html>
+
 
     <div class="container">
         <div class="dashboard-grid">

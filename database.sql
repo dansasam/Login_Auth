@@ -19,6 +19,18 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_created_at (created_at)
 );
 
+-- Local users table for email/password registration
+CREATE TABLE IF NOT EXISTS local_users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE,
+    INDEX idx_email (email)
+);
+
 -- Login History Table for tracking user activity
 CREATE TABLE IF NOT EXISTS login_history (
     id INT AUTO_INCREMENT PRIMARY KEY,

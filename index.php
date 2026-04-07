@@ -3,6 +3,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 session_start();
 require 'vendor/autoload.php';
+require 'config.php';
 
 if (isset($_SESSION['email'])) {
     header("Location: welcome.php");
@@ -10,13 +11,16 @@ if (isset($_SESSION['email'])) {
 }
 
 $client = new Google_Client();
-$client->setClientId('386265100104-7ojpvi7jl6crtrpjt10rlr92tk7tlgr5.apps.googleusercontent.com');
-$client->setClientSecret('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');
-$client->setRedirectUri('http://localhost/login_auth/oauth2callback.php');
+$client->setClientId(GOOGLE_CLIENT_ID);
+$client->setClientSecret(GOOGLE_CLIENT_SECRET);
+$client->setRedirectUri(GOOGLE_REDIRECT_URI);
 $client->addScope("email");
 $client->addScope("profile");
 
 $login_url = $client->createAuthUrl();
+$flashError = $_SESSION['flash_error'] ?? '';
+$flashSuccess = $_SESSION['flash_success'] ?? '';
+unset($_SESSION['flash_error'], $_SESSION['flash_success']);
 ?>
 
 <!DOCTYPE html>
@@ -24,7 +28,7 @@ $login_url = $client->createAuthUrl();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login with Google - Authentication</title>
+    <title>Login - Authentication</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -40,21 +44,22 @@ $login_url = $client->createAuthUrl();
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
+            padding: 20px;
         }
 
         .container {
             width: 100%;
-            max-width: 450px;
-            padding: 20px;
+            max-width: 980px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 30px;
         }
 
-        .login-card {
+        .card {
             background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 50px 40px;
-            text-align: center;
+            border-radius: 20px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.15);
+            padding: 40px 36px;
             animation: slideUp 0.6s ease-out;
         }
 
@@ -69,108 +74,172 @@ $login_url = $client->createAuthUrl();
             }
         }
 
-        .logo-section {
-            margin-bottom: 30px;
-        }
-
-        .logo-icon {
-            font-size: 60px;
-            color: #667eea;
-            margin-bottom: 15px;
-        }
-
-        h1 {
-            color: #333;
+        .card h1 {
             font-size: 28px;
-            margin-bottom: 10px;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .card p {
+            color: #666;
+            line-height: 1.7;
+            margin-bottom: 28px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: #555;
+            display: block;
+            margin-bottom: 8px;
             font-weight: 600;
         }
 
-        .subtitle {
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 30px;
-            line-height: 1.6;
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: 1px solid #dcdcdc;
+            font-size: 15px;
+            transition: border-color 0.25s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .submit-button,
+        .login-button {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .submit-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-top: 10px;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 16px 35px rgba(102, 126, 234, 0.25);
         }
 
         .login-button {
-            display: inline-block;
-            background: white;
-            border: 2px solid #e0e0e0;
-            padding: 12px 30px;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-            cursor: pointer;
-            font-size: 15px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
-            width: 100%;
+            background: white;
+            border: 1px solid #e0e0e0;
+            color: #333;
+            text-decoration: none;
+            margin-top: 10px;
         }
 
         .login-button:hover {
             background: #f8f8f8;
             border-color: #667eea;
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.18);
             transform: translateY(-2px);
         }
 
-        .login-button img {
-            height: 20px;
-            width: auto;
+        .alert {
+            padding: 14px 16px;
+            border-radius: 14px;
+            margin-bottom: 22px;
+            font-size: 14px;
+            text-align: left;
         }
 
-        .features {
-            margin-top: 40px;
-            padding-top: 30px;
-            border-top: 1px solid #e0e0e0;
+        .alert-error {
+            background: #ffe3e3;
+            color: #a32f2f;
         }
 
-        .features p {
-            color: #999;
-            font-size: 12px;
-            margin-top: 10px;
-            line-height: 1.6;
+        .alert-success {
+            background: #e8f7e9;
+            color: #1f7a3a;
         }
 
-        .security-badge {
-            font-size: 12px;
+        .register-link {
+            margin-top: 16px;
+            display: block;
             color: #667eea;
-            margin-top: 20px;
+            text-decoration: none;
+            font-weight: 600;
         }
 
-        .security-badge i {
-            margin-right: 5px;
+        .register-link:hover {
+            text-decoration: underline;
         }
 
-        @media (max-width: 480px) {
-            .login-card {
-                padding: 40px 30px;
-            }
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 30px 0 20px;
+        }
 
-            h1 {
-                font-size: 24px;
-            }
+        .divider span {
+            flex: 1;
+            height: 1px;
+            background: #e5e7eb;
+        }
 
-            .logo-icon {
-                font-size: 50px;
+        .divider strong {
+            color: #7c7c7c;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 860px) {
+            .container {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="login-card">
-            <div class="logo-section">
-                <div class="logo-icon">🔐</div>
-                <h1>Welcome Back</h1>
-                <p class="subtitle">Sign in securely with your Google account to access your dashboard</p>
-            </div>
+        <div class="card">
+            <h1>Sign in to your account</h1>
+            <p>Use your email and password, or choose Google sign-in for the fastest access.</p>
+
+            <?php if ($flashError): ?>
+                <div class="alert alert-error"><?php echo htmlspecialchars($flashError); ?></div>
+            <?php endif; ?>
+
+            <?php if ($flashSuccess): ?>
+                <div class="alert alert-success"><?php echo htmlspecialchars($flashSuccess); ?></div>
+            <?php endif; ?>
+
+            <form action="login_process.php" method="POST" novalidate>
+                <div class="form-group">
+                    <label for="email">Email address</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="submit-button">Sign in</button>
+            </form>
+
+            <div class="divider"><span></span><strong>or</strong><span></span></div>
 
             <a href="<?php echo $login_url; ?>" class="login-button">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -182,14 +251,16 @@ $login_url = $client->createAuthUrl();
                 Sign in with Google
             </a>
 
-            <div class="features">
-                <p><i class="fas fa-check" style="color: #34A853;"></i> Secure OAuth 2.0 authentication</p>
-                <p><i class="fas fa-check" style="color: #34A853;"></i> Your data is protected</p>
-                <p><i class="fas fa-check" style="color: #34A853;"></i> Easy account access</p>
-            </div>
+            <a href="register.php" class="register-link">Create a new account</a>
+        </div>
 
-            <div class="security-badge">
-                <i class="fas fa-shield-alt"></i> Your privacy is our priority
+        <div class="card">
+            <h1>Secure access made easy</h1>
+            <p>Register once with a secure password, then sign in locally or use Google account sign-in anytime. Your credentials are protected with modern hashing and secure sessions.</p>
+            <div class="features">
+                <p><i class="fas fa-check" style="color: #34A853;"></i> Local email/password registration</p>
+                <p><i class="fas fa-check" style="color: #34A853;"></i> Seamless Google OAuth login</p>
+                <p><i class="fas fa-check" style="color: #34A853;"></i> Clean, secure design</p>
             </div>
         </div>
     </div>
